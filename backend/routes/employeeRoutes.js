@@ -87,4 +87,26 @@ employeeRouter.delete('/emp/employees', async (req, res) => {
     }
 });
 
+employeeRouter.get('/emp/search', async (req, res) => {
+    try {
+        const { department, position } = req.query;
+
+        let query = {};
+
+        if (department) {
+            query.department = { $regex: department, $options: "i" };
+        }
+
+        if (position) {
+            query.position = { $regex: position, $options: "i" };
+        }
+
+        const results = await Employee.find(query);
+        res.status(200).json(results);
+
+    } catch (err) {
+        res.status(500).json({ message: "Failed to perform search." });
+    }
+});
+
 module.exports = employeeRouter;
