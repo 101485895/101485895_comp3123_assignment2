@@ -1,0 +1,26 @@
+{
+  "name": "comp3123_assignment2",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/101485895/101485895_comp3123_assignment2.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/101485895/101485895_comp3123_assignment2/issues"
+  },
+  "homepage": "https://github.com/101485895/101485895_comp3123_assignment2.git#readme",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "express-validator": "^7.2.1",
+    "mongoose": "^8.19.1"
+  }
+}
