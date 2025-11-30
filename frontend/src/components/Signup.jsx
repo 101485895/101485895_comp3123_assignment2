@@ -10,7 +10,6 @@ function Signup() {
 
   const [errors, setErrors] = useState({});
 
-  // Controlled inputs
   const handleChange = (e) => {
     setForm({
       ...form,
@@ -18,7 +17,6 @@ function Signup() {
     });
   };
 
-  // Simple validation function
   const validate = () => {
     let temp = {};
 
@@ -30,7 +28,7 @@ function Signup() {
       temp.password = "Password must be at least 5 characters";
 
     setErrors(temp);
-    return Object.keys(temp).length === 0; // no errors
+    return Object.keys(temp).length === 0;
   };
 
   const handleSubmit = (e) => {
