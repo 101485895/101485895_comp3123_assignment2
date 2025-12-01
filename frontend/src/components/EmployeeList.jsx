@@ -3,6 +3,27 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api/api";
 
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  Grid,
+  TextField,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  Avatar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Typography,
+} from "@mui/material";
+
 function EmployeeList() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -14,10 +35,7 @@ function EmployeeList() {
 
   const { data: employees, isLoading, isError, error } = useQuery({
     queryKey: ["employees"],
-    queryFn: async () => {
-      const res = await api.get("/emp/employees");
-      return res.data;
-    },
+    queryFn: async () => (await api.get("/emp/employees")).data,
   });
 
   const [searchDept, setSearchDept] = useState("");
@@ -48,38 +66,20 @@ function EmployeeList() {
     date_of_joining: "",
     department: "",
   });
-
   const [newFile, setNewFile] = useState(null);
 
-  const handleNewChange = (e) => {
+  const handleNewChange = (e) =>
     setNewEmployee({ ...newEmployee, [e.target.name]: e.target.value });
-  };
-
-  const handleNewFile = (e) => {
-    setNewFile(e.target.files[0]);
-  };
 
   const addEmployeeMutation = useMutation({
     mutationFn: async (data) => {
       const form = new FormData();
-      for (let key in data) form.append(key, data[key]);
+      Object.entries(data).forEach(([k, v]) => form.append(k, v));
       if (newFile) form.append("profile_picture", newFile);
-      await api.post("/emp/employees", form, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      await api.post("/emp/employees", form);
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["employees"]);
-      setNewEmployee({
-        first_name: "",
-        last_name: "",
-        email: "",
-        position: "",
-        salary: "",
-        date_of_joining: "",
-        department: "",
-      });
-      setNewFile(null);
     },
   });
 
@@ -88,80 +88,60 @@ function EmployeeList() {
     addEmployeeMutation.mutate(newEmployee);
   };
 
-  const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm] = useState({
-    first_name: "",
-    last_name: "",
-    email: "",
-    position: "",
-    salary: "",
-    date_of_joining: "",
-    department: "",
-  });
-
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState({});
   const [editFile, setEditFile] = useState(null);
+  const [editingId, setEditingId] = useState(null);
 
   const startEdit = (emp) => {
-    setEditingId(emp._id);
     setEditForm({
       first_name: emp.first_name,
       last_name: emp.last_name,
       email: emp.email,
       position: emp.position,
       salary: emp.salary,
-      date_of_joining: emp.date_of_joining?.slice(0, 10) || "",
+      date_of_joining: emp.date_of_joining?.slice(0, 10),
       department: emp.department,
     });
-    setEditFile(null);
-  };
-
-  const handleEditChange = (e) => {
-    setEditForm({ ...editForm, [e.target.name]: e.target.value });
-  };
-
-  const handleEditFile = (e) => {
-    setEditFile(e.target.files[0]);
+    setEditingId(emp._id);
+    setEditOpen(true);
   };
 
   const updateEmployeeMutation = useMutation({
     mutationFn: async ({ id, data }) => {
       const form = new FormData();
-      for (let key in data) form.append(key, data[key]);
+      Object.entries(data).forEach(([k, v]) => form.append(k, v));
       if (editFile) form.append("profile_picture", editFile);
-      await api.put(`/emp/employees/${id}`, form, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      await api.put(`/emp/employees/${id}`, form);
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["employees"]);
-      setEditingId(null);
-      setEditFile(null);
+      setEditOpen(false);
     },
   });
 
   const handleEditSubmit = (e) => {
     e.preventDefault();
-    if (!editingId) return;
     updateEmployeeMutation.mutate({ id: editingId, data: editForm });
   };
 
   const deleteEmployeeMutation = useMutation({
-    mutationFn: async (id) => {
-      await api.delete("/emp/employees", { params: { eid: id } });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(["employees"]);
-    },
+    mutationFn: async (id) =>
+      api.delete("/emp/employees", { params: { eid: id } }),
+    onSuccess: () => queryClient.invalidateQueries(["employees"]),
   });
 
   const handleDelete = (id) => {
-    if (window.confirm("Are you sure?")) deleteEmployeeMutation.mutate(id);
+    if (window.confirm("Delete this employee?"))
+      deleteEmployeeMutation.mutate(id);
   };
 
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
 
   const viewDetails = (emp) => {
     setSelectedEmployee(emp);
+    setDetailsOpen(true);
   };
 
   const handleLogout = () => {
@@ -169,160 +149,252 @@ function EmployeeList() {
     navigate("/");
   };
 
-  if (isLoading) return <div>Loading employees...</div>;
-  if (isError) return <div>Error: {error.message}</div>;
+  if (isLoading) return <Typography>Loading...</Typography>;
+  if (isError) return <Typography>Error: {error.message}</Typography>;
 
   return (
-    <div style={{ padding: "1rem" }}>
-      <h1>Employees</h1>
-      <button onClick={handleLogout}>Logout</button>
+    <Box p={3}>
+      <Box display="flex" justifyContent="space-between" alignItems="center">
+        <Typography variant="h4">Employees</Typography>
+        <Button variant="contained" color="error" onClick={handleLogout}>
+          Logout
+        </Button>
+      </Box>
 
-      <h2>Search Employees</h2>
-      <div style={{ marginBottom: "1rem" }}>
-        <input
-          type="text"
-          placeholder="Search by Department"
-          value={searchDept}
-          onChange={(e) => setSearchDept(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Search by Position"
-          value={searchPosition}
-          onChange={(e) => setSearchPosition(e.target.value)}
-          style={{ marginLeft: "10px" }}
-        />
-        <button onClick={() => searchQuery.refetch()} style={{ marginLeft: "10px" }}>
-          Search
-        </button>
-        <button
-          onClick={() => {
-            setSearchDept("");
-            setSearchPosition("");
-            queryClient.invalidateQueries(["employees"]);
-          }}
-          style={{ marginLeft: "10px" }}
-        >
-          Clear
-        </button>
-      </div>
+      {/* SEARCH */}
+      <Card sx={{ mt: 3 }}>
+        <CardHeader title="Search Employees" />
+        <CardContent>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                label="Department"
+                value={searchDept}
+                onChange={(e) => setSearchDept(e.target.value)}
+              />
+            </Grid>
 
-      <h2>Employee List</h2>
-      {displayEmployees?.length > 0 ? (
-        <table border="1" cellPadding="8" cellSpacing="0">
-          <thead>
-            <tr>
-              <th>First</th>
-              <th>Last</th>
-              <th>Email</th>
-              <th>Position</th>
-              <th>Salary</th>
-              <th>Department</th>
-              <th>Picture</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {displayEmployees.map((emp) => (
-              <tr key={emp._id}>
-                <td>{emp.first_name}</td>
-                <td>{emp.last_name}</td>
-                <td>{emp.email}</td>
-                <td>{emp.position}</td>
-                <td>{emp.salary}</td>
-                <td>{emp.department}</td>
-                <td>
-                  {emp.profile_picture ? (
-                    <img
-                      src={`http://localhost:8081/uploads/${emp.profile_picture}`}
-                      alt="Profile"
-                      width="50"
-                      height="50"
-                    />
-                  ) : (
-                    "None"
-                  )}
-                </td>
-                <td>
-                  <button onClick={() => viewDetails(emp)}>View</button>
-                  <button onClick={() => startEdit(emp)}>Edit</button>
-                  <button onClick={() => handleDelete(emp._id)}>Delete</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      ) : (
-        <p>No employees found.</p>
-      )}
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                label="Position"
+                value={searchPosition}
+                onChange={(e) => setSearchPosition(e.target.value)}
+              />
+            </Grid>
 
-      {selectedEmployee && (
-        <div style={{ marginTop: "1rem" }}>
-          <h2>Employee Details</h2>
+            <Grid item xs={12} md={4} display="flex" gap={2}>
+              <Button
+                variant="contained"
+                onClick={() => searchQuery.refetch()}
+              >
+                Search
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setSearchDept("");
+                  setSearchPosition("");
+                  queryClient.invalidateQueries(["employees"]);
+                }}
+              >
+                Clear
+              </Button>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
 
-          {selectedEmployee.profile_picture && (
-            <img
-              src={`http://localhost:8081/uploads/${selectedEmployee.profile_picture}`}
-              alt="Profile"
-              width="120"
-              height="120"
-            />
-          )}
+      {/* EMPLOYEE TABLE */}
+      <Card sx={{ mt: 4 }}>
+        <CardHeader title="Employee List" />
+        <CardContent>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Picture</TableCell>
+                <TableCell>First</TableCell>
+                <TableCell>Last</TableCell>
+                <TableCell>Email</TableCell>
+                <TableCell>Position</TableCell>
+                <TableCell>Salary</TableCell>
+                <TableCell>Department</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
 
-          <p>
-            <strong>Name:</strong> {selectedEmployee.first_name} {selectedEmployee.last_name}
-          </p>
-          <p><strong>Email:</strong> {selectedEmployee.email}</p>
-          <p><strong>Position:</strong> {selectedEmployee.position}</p>
-          <p><strong>Salary:</strong> {selectedEmployee.salary}</p>
-          <p><strong>Department:</strong> {selectedEmployee.department}</p>
-          <p><strong>Date of Joining:</strong> {selectedEmployee.date_of_joining?.slice(0, 10)}</p>
-        </div>
-      )}
+            <TableBody>
+              {displayEmployees?.map((emp) => (
+                <TableRow key={emp._id}>
+                  <TableCell>
+                    {emp.profile_picture ? (
+                      <Avatar
+                        src={`http://localhost:8081/uploads/${emp.profile_picture}`}
+                      />
+                    ) : (
+                      <Avatar />
+                    )}
+                  </TableCell>
+                  <TableCell>{emp.first_name}</TableCell>
+                  <TableCell>{emp.last_name}</TableCell>
+                  <TableCell>{emp.email}</TableCell>
+                  <TableCell>{emp.position}</TableCell>
+                  <TableCell>{emp.salary}</TableCell>
+                  <TableCell>{emp.department}</TableCell>
+                  <TableCell>
+                    <Button size="small" onClick={() => viewDetails(emp)}>
+                      View
+                    </Button>
+                    <Button size="small" onClick={() => startEdit(emp)}>
+                      Edit
+                    </Button>
+                    <Button
+                      size="small"
+                      color="error"
+                      onClick={() => handleDelete(emp._id)}
+                    >
+                      Delete
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
-      <div style={{ marginTop: "2rem" }}>
-        <h2>Add Employee</h2>
-        <form onSubmit={handleAddSubmit}>
-          <input name="first_name" placeholder="First Name" value={newEmployee.first_name} onChange={handleNewChange} />
-          <input name="last_name" placeholder="Last Name" value={newEmployee.last_name} onChange={handleNewChange} />
-          <input name="email" placeholder="Email" value={newEmployee.email} onChange={handleNewChange} />
-          <input name="position" placeholder="Position" value={newEmployee.position} onChange={handleNewChange} />
-          <input name="salary" placeholder="Salary" type="number" value={newEmployee.salary} onChange={handleNewChange} />
-          <input name="date_of_joining" type="date" value={newEmployee.date_of_joining} onChange={handleNewChange} />
-          <input name="department" placeholder="Department" value={newEmployee.department} onChange={handleNewChange} />
-          
-          <input type="file" name="profile_picture" onChange={handleNewFile} />
+      {/* ADD EMPLOYEE */}
+      <Card sx={{ mt: 4 }}>
+        <CardHeader title="Add Employee" />
+        <CardContent>
+          <form onSubmit={handleAddSubmit}>
+            <Grid container spacing={2}>
+              {[
+                ["first_name", "First Name"],
+                ["last_name", "Last Name"],
+                ["email", "Email"],
+                ["position", "Position"],
+                ["salary", "Salary"],
+                ["department", "Department"],
+              ].map(([name, label]) => (
+                <Grid item xs={12} md={4} key={name}>
+                  <TextField
+                    name={name}
+                    label={label}
+                    fullWidth
+                    value={newEmployee[name]}
+                    onChange={handleNewChange}
+                  />
+                </Grid>
+              ))}
 
-          <button type="submit">
-            Add Employee
-          </button>
-        </form>
-      </div>
+              <Grid item xs={12} md={4}>
+                <TextField
+                  type="date"
+                  name="date_of_joining"
+                  label="Date of Joining"
+                  InputLabelProps={{ shrink: true }}
+                  fullWidth
+                  value={newEmployee.date_of_joining}
+                  onChange={handleNewChange}
+                />
+              </Grid>
 
-      {editingId && (
-        <div style={{ marginTop: "2rem" }}>
-          <h2>Edit Employee</h2>
-          <form onSubmit={handleEditSubmit}>
-            <input name="first_name" placeholder="First Name" value={editForm.first_name} onChange={handleEditChange} />
-            <input name="last_name" placeholder="Last Name" value={editForm.last_name} onChange={handleEditChange} />
-            <input name="email" placeholder="Email" value={editForm.email} onChange={handleEditChange} />
-            <input name="position" placeholder="Position" value={editForm.position} onChange={handleEditChange} />
-            <input name="salary" placeholder="Salary" type="number" value={editForm.salary} onChange={handleEditChange} />
-            <input name="date_of_joining" type="date" value={editForm.date_of_joining} onChange={handleEditChange} />
-            <input name="department" placeholder="Department" value={editForm.department} onChange={handleEditChange} />
+              <Grid item xs={12} md={4}>
+                <Button variant="outlined" component="label">
+                  Upload Picture
+                  <input type="file" hidden onChange={(e) => setNewFile(e.target.files[0])} />
+                </Button>
+              </Grid>
 
-            <input type="file" name="profile_picture" onChange={handleEditFile} />
-
-            <button type="submit">
-              Update
-            </button>
-            <button type="button" onClick={() => setEditingId(null)} style={{ marginLeft: "10px" }}>
-              Cancel
-            </button>
+              <Grid item xs={12}>
+                <Button variant="contained" type="submit">
+                  Add Employee
+                </Button>
+              </Grid>
+            </Grid>
           </form>
-        </div>
-      )}
-    </div>
+        </CardContent>
+      </Card>
+
+      {/* EMPLOYEE DETAILS MODAL */}
+      <Dialog open={detailsOpen} onClose={() => setDetailsOpen(false)}>
+        <DialogTitle>Employee Details</DialogTitle>
+        <DialogContent>
+          {selectedEmployee && (
+            <>
+              <Box textAlign="center">
+                <Avatar
+                  src={
+                    selectedEmployee.profile_picture
+                      ? `http://localhost:8081/uploads/${selectedEmployee.profile_picture}`
+                      : ""
+                  }
+                  sx={{ width: 100, height: 100, margin: "auto" }}
+                />
+              </Box>
+
+              <Typography>Name: {selectedEmployee.first_name} {selectedEmployee.last_name}</Typography>
+              <Typography>Email: {selectedEmployee.email}</Typography>
+              <Typography>Position: {selectedEmployee.position}</Typography>
+              <Typography>Salary: {selectedEmployee.salary}</Typography>
+              <Typography>Department: {selectedEmployee.department}</Typography>
+              <Typography>
+                Joined: {selectedEmployee.date_of_joining?.slice(0, 10)}
+              </Typography>
+            </>
+          )}
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setDetailsOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* EDIT MODAL */}
+      <Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Edit Employee</DialogTitle>
+        <DialogContent>
+          <form onSubmit={handleEditSubmit}>
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              {Object.entries(editForm).map(([key, value]) => (
+                <Grid item xs={12} md={4} key={key}>
+                  <TextField
+                    name={key}
+                    label={key.replace("_", " ").toUpperCase()}
+                    fullWidth
+                    value={value}
+                    type={key === "date_of_joining" ? "date" : undefined}
+                    InputLabelProps={key === "date_of_joining" ? { shrink: true } : {}}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, [key]: e.target.value })
+                    }
+                  />
+                </Grid>
+              ))}
+
+              <Grid item xs={12}>
+                <Button variant="outlined" component="label">
+                  Upload New Picture
+                  <input type="file" hidden onChange={(e) => setEditFile(e.target.files[0])} />
+                </Button>
+              </Grid>
+
+              <Grid item xs={12}>
+                <Button variant="contained" type="submit">
+                  Update
+                </Button>
+              </Grid>
+            </Grid>
+          </form>
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setEditOpen(false)}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 }
 

@@ -1,79 +1,82 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { api } from "../api/api";
+import { Container, TextField, Button, Typography, Box, Paper } from "@mui/material";
 
 function Login() {
+  const navigate = useNavigate();
+
   const [form, setForm] = useState({
-    emailOrUsername: "",
-    password: ""
+    username: "",
+    password: "",
   });
 
-  const [errors, setErrors] = useState({});
-
   const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value
-    });
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const validate = () => {
-    let temp = {};
-
-    if (!form.emailOrUsername.trim())
-      temp.emailOrUsername = "Email or Username is required";
-
-    if (!form.password.trim()) temp.password = "Password is required";
-
-    setErrors(temp);
-    return Object.keys(temp).length === 0;
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validate()) return;
 
-    localStorage.setItem("token", "logged-in");
-    
-    window.location.href = "/employees";
+    try {
+      const res = await api.post("/user/login", form);
+      localStorage.setItem("token", res.data.token);
+      navigate("/employees");
+    } catch (err) {
+      alert("Invalid username or password.");
+    }
   };
 
   return (
-    <div>
-      <h1>Login</h1>
+    <Container maxWidth="sm">
+      <Paper elevation={4} sx={{ padding: 4, marginTop: 10 }}>
+        <Typography variant="h4" textAlign="center" gutterBottom>
+          Login
+        </Typography>
 
-      <form onSubmit={handleSubmit}>
-        <div>
-          <input
-            name="emailOrUsername"
-            placeholder="Email or Username"
-            value={form.emailOrUsername}
+        <Box component="form" onSubmit={handleSubmit}>
+          <TextField
+            fullWidth
+            margin="normal"
+            label="Username"
+            name="username"
+            value={form.username}
             onChange={handleChange}
+            required
           />
-          {errors.emailOrUsername && (
-            <p style={{ color: "red" }}>{errors.emailOrUsername}</p>
-          )}
-        </div>
 
-        <div>
-          <input
-            name="password"
+          <TextField
+            fullWidth
             type="password"
-            placeholder="Password"
+            margin="normal"
+            label="Password"
+            name="password"
             value={form.password}
             onChange={handleChange}
+            required
           />
-          {errors.password && (
-            <p style={{ color: "red" }}>{errors.password}</p>
-          )}
-        </div>
 
-        <button type="submit">Login</button>
-      </form>
+          <Button
+            fullWidth
+            variant="contained"
+            color="primary"
+            sx={{ marginTop: 2 }}
+            type="submit"
+          >
+            Login
+          </Button>
 
-      <p>
-        Don't have an account? <Link to="/signup">Signup here</Link>
-      </p>
-    </div>
+          <Button
+            fullWidth
+            variant="text"
+            sx={{ marginTop: 1 }}
+            onClick={() => navigate("/signup")}
+          >
+            Create an Account
+          </Button>
+        </Box>
+      </Paper>
+    </Container>
   );
 }
 

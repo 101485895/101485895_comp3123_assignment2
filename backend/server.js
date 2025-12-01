@@ -5,7 +5,7 @@ const cors = require("cors");
 const userRoutes = require('./routes/userRoutes.js')
 const employeeRoutes = require('./routes/employeeRoutes.js')
 
-const DB_URL = "mongodb+srv://101485895_db_user:wJ9TVaA7Vyq3H7Wg@assignment2.ailycom.mongodb.net/comp3123_assignment2?appName=assignment2";
+const DB_URL = process.env.DB_URL || "mongodb://localhost:27017/comp3123_assignment2";
 const PORT = 8081;
 
 const app = express();
