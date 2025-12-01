@@ -89,15 +89,23 @@ employeeRouter.delete('/emp/employees', async (req, res) => {
 employeeRouter.get("/emp/search", async (req, res) => {
   try {
     const { department, position } = req.query;
+
     const filter = {};
-    if (department) filter.department = department;
-    if (position) filter.position = position;
+
+    if (department) {
+      filter.department = { $regex: department, $options: "i" };
+    }
+
+    if (position) {
+      filter.position = { $regex: position, $options: "i" };
+    }
 
     const results = await Employee.find(filter);
     res.status(200).json(results);
-  } catch {
+  } catch (err) {
     res.status(500).json({ message: "Search failed" });
   }
 });
+
 
 module.exports = employeeRouter;
