@@ -9,17 +9,10 @@ function EmployeeList() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/");
-    }
+    if (!token) navigate("/");
   }, [navigate]);
-  
-  const {
-    data: employees,
-    isLoading,
-    isError,
-    error,
-  } = useQuery({
+
+  const { data: employees, isLoading, isError, error } = useQuery({
     queryKey: ["employees"],
     queryFn: async () => {
       const res = await api.get("/emp/employees");
@@ -56,10 +49,24 @@ function EmployeeList() {
     department: "",
   });
 
+  const [newFile, setNewFile] = useState(null);
+
+  const handleNewChange = (e) => {
+    setNewEmployee({ ...newEmployee, [e.target.name]: e.target.value });
+  };
+
+  const handleNewFile = (e) => {
+    setNewFile(e.target.files[0]);
+  };
+
   const addEmployeeMutation = useMutation({
-    mutationFn: async (employee) => {
-      const payload = { ...employee, salary: Number(employee.salary || 0) };
-      await api.post("/emp/employees", payload);
+    mutationFn: async (data) => {
+      const form = new FormData();
+      for (let key in data) form.append(key, data[key]);
+      if (newFile) form.append("profile_picture", newFile);
+      await api.post("/emp/employees", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["employees"]);
@@ -72,12 +79,9 @@ function EmployeeList() {
         date_of_joining: "",
         department: "",
       });
+      setNewFile(null);
     },
   });
-
-  const handleNewChange = (e) => {
-    setNewEmployee({ ...newEmployee, [e.target.name]: e.target.value });
-  };
 
   const handleAddSubmit = (e) => {
     e.preventDefault();
@@ -95,6 +99,8 @@ function EmployeeList() {
     department: "",
   });
 
+  const [editFile, setEditFile] = useState(null);
+
   const startEdit = (emp) => {
     setEditingId(emp._id);
     setEditForm({
@@ -106,20 +112,30 @@ function EmployeeList() {
       date_of_joining: emp.date_of_joining?.slice(0, 10) || "",
       department: emp.department,
     });
+    setEditFile(null);
   };
 
   const handleEditChange = (e) => {
     setEditForm({ ...editForm, [e.target.name]: e.target.value });
   };
 
+  const handleEditFile = (e) => {
+    setEditFile(e.target.files[0]);
+  };
+
   const updateEmployeeMutation = useMutation({
     mutationFn: async ({ id, data }) => {
-      const payload = { ...data, salary: Number(data.salary || 0) };
-      await api.put(`/emp/employees/${id}`, payload);
+      const form = new FormData();
+      for (let key in data) form.append(key, data[key]);
+      if (editFile) form.append("profile_picture", editFile);
+      await api.put(`/emp/employees/${id}`, form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["employees"]);
       setEditingId(null);
+      setEditFile(null);
     },
   });
 
@@ -131,9 +147,7 @@ function EmployeeList() {
 
   const deleteEmployeeMutation = useMutation({
     mutationFn: async (id) => {
-      await api.delete("/emp/employees", {
-        params: { eid: id },
-      });
+      await api.delete("/emp/employees", { params: { eid: id } });
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["employees"]);
@@ -141,9 +155,7 @@ function EmployeeList() {
   });
 
   const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to delete this employee?")) {
-      deleteEmployeeMutation.mutate(id);
-    }
+    if (window.confirm("Are you sure?")) deleteEmployeeMutation.mutate(id);
   };
 
   const [selectedEmployee, setSelectedEmployee] = useState(null);
@@ -172,19 +184,17 @@ function EmployeeList() {
           placeholder="Search by Department"
           value={searchDept}
           onChange={(e) => setSearchDept(e.target.value)}
-          style={{ marginRight: "10px" }}
         />
-
         <input
           type="text"
           placeholder="Search by Position"
           value={searchPosition}
           onChange={(e) => setSearchPosition(e.target.value)}
-          style={{ marginRight: "10px" }}
+          style={{ marginLeft: "10px" }}
         />
-
-        <button onClick={() => searchQuery.refetch()}>Search</button>
-
+        <button onClick={() => searchQuery.refetch()} style={{ marginLeft: "10px" }}>
+          Search
+        </button>
         <button
           onClick={() => {
             setSearchDept("");
@@ -198,7 +208,7 @@ function EmployeeList() {
       </div>
 
       <h2>Employee List</h2>
-      {displayEmployees && displayEmployees.length > 0 ? (
+      {displayEmployees?.length > 0 ? (
         <table border="1" cellPadding="8" cellSpacing="0">
           <thead>
             <tr>
@@ -208,6 +218,7 @@ function EmployeeList() {
               <th>Position</th>
               <th>Salary</th>
               <th>Department</th>
+              <th>Picture</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -220,6 +231,18 @@ function EmployeeList() {
                 <td>{emp.position}</td>
                 <td>{emp.salary}</td>
                 <td>{emp.department}</td>
+                <td>
+                  {emp.profile_picture ? (
+                    <img
+                      src={`http://localhost:8081/uploads/${emp.profile_picture}`}
+                      alt="Profile"
+                      width="50"
+                      height="50"
+                    />
+                  ) : (
+                    "None"
+                  )}
+                </td>
                 <td>
                   <button onClick={() => viewDetails(emp)}>View</button>
                   <button onClick={() => startEdit(emp)}>Edit</button>
@@ -236,19 +259,24 @@ function EmployeeList() {
       {selectedEmployee && (
         <div style={{ marginTop: "1rem" }}>
           <h2>Employee Details</h2>
+
+          {selectedEmployee.profile_picture && (
+            <img
+              src={`http://localhost:8081/uploads/${selectedEmployee.profile_picture}`}
+              alt="Profile"
+              width="120"
+              height="120"
+            />
+          )}
+
           <p>
-            <strong>Name:</strong> {selectedEmployee.first_name}{" "}
-            {selectedEmployee.last_name}
+            <strong>Name:</strong> {selectedEmployee.first_name} {selectedEmployee.last_name}
           </p>
-          <p>
-            <strong>Email:</strong> {selectedEmployee.email}</p>
+          <p><strong>Email:</strong> {selectedEmployee.email}</p>
           <p><strong>Position:</strong> {selectedEmployee.position}</p>
           <p><strong>Salary:</strong> {selectedEmployee.salary}</p>
           <p><strong>Department:</strong> {selectedEmployee.department}</p>
-          <p>
-            <strong>Date of Joining:</strong>{" "}
-            {selectedEmployee.date_of_joining?.slice(0, 10)}
-          </p>
+          <p><strong>Date of Joining:</strong> {selectedEmployee.date_of_joining?.slice(0, 10)}</p>
         </div>
       )}
 
@@ -262,9 +290,11 @@ function EmployeeList() {
           <input name="salary" placeholder="Salary" type="number" value={newEmployee.salary} onChange={handleNewChange} />
           <input name="date_of_joining" type="date" value={newEmployee.date_of_joining} onChange={handleNewChange} />
           <input name="department" placeholder="Department" value={newEmployee.department} onChange={handleNewChange} />
+          
+          <input type="file" name="profile_picture" onChange={handleNewFile} />
 
-          <button type="submit" disabled={addEmployeeMutation.isLoading}>
-            {addEmployeeMutation.isLoading ? "Adding..." : "Add Employee"}
+          <button type="submit">
+            Add Employee
           </button>
         </form>
       </div>
@@ -281,10 +311,12 @@ function EmployeeList() {
             <input name="date_of_joining" type="date" value={editForm.date_of_joining} onChange={handleEditChange} />
             <input name="department" placeholder="Department" value={editForm.department} onChange={handleEditChange} />
 
-            <button type="submit" disabled={updateEmployeeMutation.isLoading}>
-              {updateEmployeeMutation.isLoading ? "Updating..." : "Update"}
+            <input type="file" name="profile_picture" onChange={handleEditFile} />
+
+            <button type="submit">
+              Update
             </button>
-            <button type="button" onClick={() => setEditingId(null)} style={{ marginLeft: "0.5rem" }}>
+            <button type="button" onClick={() => setEditingId(null)} style={{ marginLeft: "10px" }}>
               Cancel
             </button>
           </form>
