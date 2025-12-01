@@ -44,6 +44,37 @@ mongodb
 
 mongo-express
 
+# Project Structure
+```
+101485895_comp3123_assignment2/
+│
+├── backend/
+│   ├── models/
+│   │   ├── user.js
+│   │   └── employee.js
+│   ├── routes/
+│   │   ├── userRoutes.js
+│   │   └── employeeRoutes.js
+│   ├── uploads/               # stores employee profile pictures
+│   ├── Dockerfile
+│   ├── package.json
+│   └── server.js
+│
+├── frontend/
+│   ├── src/
+│   │   ├── api/api.js
+│   │   ├── components/
+│   │   │   ├── Login.jsx
+│   │   │   ├── Signup.jsx
+│   │   │   ├── EmployeeList.jsx
+│   │   │   └── EmployeeView / Edit (if applicable)
+│   ├── public/
+│   ├── Dockerfile
+│   └── package.json
+│
+└── docker-compose.yml
+```
+
 # API Endpoints
 
 Base URL (from Docker Compose):
