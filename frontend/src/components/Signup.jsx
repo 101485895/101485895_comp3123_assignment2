@@ -20,7 +20,7 @@ function Signup() {
     e.preventDefault();
 
     try {
-      await api.post("/user/signup", form);
+      await api.post("/api/v1/user/signup", form);
       alert("Signup Successful! Please login.");
       navigate("/");
     } catch (err) {
