@@ -51,6 +51,23 @@ Base URL (from Docker Compose):
 backend: http://localhost:8081/api/v1
 frontend: http://localhost:3000
 
+# Authentication Routes
+```
+Method	Endpoint	Description
+POST	/user/signup	Registers a new user
+POST	/user/login	Logs in a user, returns session token
+```
+## Employee Routes
+```
+Method	Endpoint	Description
+GET	/emp/employees	Get all employees
+POST /emp/employees	Add employee (supports image upload)
+GET	/emp/employees/:id	View employee details
+PUT	/emp/employees/:id	Update employee (supports image upload)
+DELETE	/emp/employees?eid=id	Delete employee
+GET	/emp/search?department=&position=	Search employees by criteria
+```
+
 # Running with Docker
 
 Start Containers
