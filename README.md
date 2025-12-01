@@ -1,10 +1,10 @@
-## COMP3123 – Assignment 2
+# COMP3123 – Assignment 2
 
 Author: Laurence Liang
 Student ID: 101485895
 
-## Tech Stack
-# Frontend
+# Tech Stack
+## Frontend
 
 React.js (Create React App)
 
@@ -16,7 +16,7 @@ React Router for navigation
 
 React Query for server state management
 
-# Backend
+## Backend
 
 Node.js / Express.js
 
@@ -28,7 +28,7 @@ multer for image upload
 
 CORS enabled API
 
-# DevOps
+## DevOps
 
 Docker for containerization
 
@@ -44,7 +44,7 @@ mongodb
 
 mongo-express
 
-## Project Structure
+# Project Structure
 101485895_comp3123_assignment2/
 │
 ├── backend/
@@ -77,11 +77,11 @@ Base URL (from Docker Compose):
 
 http://localhost:8081/api/v1
 
-## Authentication Routes
+# Authentication Routes
 Method	Endpoint	Description
 POST	/user/signup	Registers a new user
 POST	/user/login	Logs in a user, returns session token
-# Employee Routes
+## Employee Routes
 Method	Endpoint	Description
 GET	/emp/employees	Get all employees
 POST	/emp/employees	Add employee (supports image upload)
